@@ -5,7 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -185,6 +189,8 @@ fun SmallTopAppBarExample() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun inboxContent(scope: CoroutineScope, drawerState: DrawerState) {
+
+    val selectedEmail = remember { mutableStateOf<Email?>(null) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -253,7 +259,23 @@ fun inboxContent(scope: CoroutineScope, drawerState: DrawerState) {
                 .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(text = "Emails recebidos")
+            val emails = generateDummyEmails()
+            LazyColumn {
+                items(emails) { email ->
+                    EmailItem(email = email) {
+                        // Atualize o email selecionado quando um email for clicado
+                        selectedEmail.value = email
+                    }
+                }
+            }
+        }
+    }
+
+    // Exiba os detalhes do email selecionado
+    selectedEmail.value?.let { email ->
+        EmailDetails(email = email) {
+            // Feche os detalhes do email quando o usuário clicar no botão de fechar
+            selectedEmail.value = null
         }
     }
 }
@@ -405,7 +427,7 @@ fun trashContent(scope: CoroutineScope, drawerState: DrawerState) {
                 .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(text = "Emails excluídos")
+            Text(text = "Lixeira")
         }
     }
 }
@@ -414,5 +436,73 @@ fun trashContent(scope: CoroutineScope, drawerState: DrawerState) {
 @Composable
 fun PreviewSmallTopAppBarExample() {
     SmallTopAppBarExample()
+}
 
+@Composable
+fun EmailItem(email: Email, onItemClick: () -> Unit) {
+    // Aqui você pode criar a IU para exibir um único item de e-mail
+    // Por exemplo:
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable ( onClick = onItemClick )
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Email,
+            contentDescription = "Email Icon",
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(text = email.sender, fontWeight = FontWeight.Bold)
+            Text(text = email.subject, style = MaterialTheme.typography.bodyLarge)
+            Text(text = email.preview, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+// Definição fictícia de um modelo de e-mail
+data class Email(
+    val id: Int,
+    val sender: String,
+    val subject: String,
+    val preview: String,
+    val content: String
+)
+
+// Função fictícia para gerar e-mails de exemplo
+fun generateDummyEmails(): List<Email> {
+    return List(20) { index ->
+        Email(
+            id = index,
+            sender = "Sender $index",
+            subject = "Subject $index",
+            preview = "Preview of email $index",
+            content = "content $index"
+        )
+    }
+}
+
+@Composable
+fun EmailDetails(email: Email, onCloseClick: () -> Unit) {
+    // Aqui você pode criar a IU para exibir os detalhes do email
+    // Por exemplo:
+    AlertDialog(
+        onDismissRequest = onCloseClick,
+        title = { Text(text = email.subject) },
+        text = {
+            Column {
+                Text(text = "Remetente: ${email.sender}")
+                Text(text = "Conteúdo: ${email.content}")
+                // Adicione mais informações conforme necessário
+            }
+        },
+        confirmButton = {
+            Button(onClick = onCloseClick) {
+                Text("Fechar")
+            }
+        }
+    )
 }
